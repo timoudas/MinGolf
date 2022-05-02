@@ -4,7 +4,7 @@ import requests
 import time
 
 from bs4 import BeautifulSoup
-from lxml import html
+from lxml import html, etree
 
 from datetime import datetime
 from datetime import timedelta
@@ -53,6 +53,8 @@ class TeeTimes:
         self.password = str(password)
         self.LOGINURL = 'https://mingolf.golf.se/Login?ReturnUrl=%2F'
         self.TEETIMES = f'https://mingolf.golf.se/handlers/booking/GetTeeTimesFullDay/4bfc39cf-b2d2-4a32-ba81-a8db53e59bb2/4fb14a3a-2135-4ae8-a302-0f7a38c93567/{self.date}/1'
+        self.header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36',
+                        'Referer': self.LOGINURL}
 
     def post_data(self):
         post_data = {
@@ -64,23 +66,34 @@ class TeeTimes:
 
     def login(self):
         with requests.Session() as s:
-            s.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'
+            s.headers = self.header
             r = s.post(self.LOGINURL, data=self.post_data())
+            print(r.status_code)
             tree = html.fromstring(r.content)
             failed = tree.xpath('//*[@id="exp-forgot-password"]/a')
             if failed:
                 print('Please check login-credentials to www.mingolf.se')
             else:
                 return r
+    
+    def get_all_clubs(self):
+        login = self.login()
+        if login:
+            with requests.Session() as s:
+                s.headers = self.header
+                r = s.post(self.LOGINURL, data=self.post_data())
+                times = s.get("https://mingolf.golf.se/Site/Booking", headers=self.header)
+                tree = html.fromstring(times.content)
+                clubs = tree.xpath('//*[@id="mgselect-9128c54fb40d37e13df2714eb696865e28c90f4b072aa8beef17d728ad112b5127725"]')
+                print(html.tostring(*clubs), 'clubs')
 
     def get_all_times(self):
         login = self.login()
         if login:
-            headers = {'Referer': self.LOGINURL}
             with requests.Session() as s:
-                s.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'
+                s.headers['User-Agent'] = self.header
                 r = s.post(self.LOGINURL, data=self.post_data())
-                times = s.get(self.TEETIMES, headers=headers).json()
+                times = s.get(self.TEETIMES, headers=self.header).json()
             return times
 
     
@@ -139,4 +152,4 @@ def main(username, password, date=None):
 
 
 if __name__ == '__main__':
-    print(TeeTimes('*******', '******').login())
+    print(TeeTimes('970712-024', 'adde123').get_all_clubs())
