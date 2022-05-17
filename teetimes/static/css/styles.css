@@ -1,0 +1,31 @@
+body {
+  background: #232323;
+  color: white; }
+
+.container {
+  display: grid;
+  grid-template-rows: auto 1fr auto; }
+
+.text-end {
+  text-align: right !important;
+  align-items: center;
+  display: inline-flex; }
+
+.tasks {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 2fr 1fr;
+  margin-top: 10px; }
+
+.tasks__active {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 10px; }
+
+.tasks__card {
+  background-color: #004c42;
+  height: 200px;
+  width: 400px;
+  border-radius: 10px; }
+
+/*# sourceMappingURL=styles.css.map */

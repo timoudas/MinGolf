@@ -1,0 +1,40 @@
+$primary-background: #232323;
+$header-color: #e5d3b2;
+$secondary-color: #004c42;
+$text-color: white;
+
+body {
+    background: $primary-background;
+    color: $text-color;
+}    
+
+.container {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+}
+
+.text-end {
+    text-align: right!important;
+    align-items: center;
+    display: inline-flex;
+}
+
+.tasks {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 2fr 1fr;
+    margin-top: 10px;
+}
+
+.tasks__active {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 10px;
+}
+
+.tasks__card {
+    background-color: $secondary-color;
+    height: 200px;
+    width: 400px;
+    border-radius: 10px;
+}

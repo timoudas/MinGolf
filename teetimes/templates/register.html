@@ -1,0 +1,23 @@
+<!-- templates/registraion.html -->
+{% extends 'home.html' %}
+
+{% block title %}TeeTimes - registraion{% endblock %}
+
+{% block content %}
+{% include "header.html" %}
+<div class="registration__wrapper">
+    <form method="POST" class = "sign-up-form">
+        {% csrf_token %} 
+        {{ register_form.as_p }}
+        <button type="submit">Submit</button>
+    </form>
+</div>
+{% if messages %}
+    {% for message in messages %}
+    <script>
+        alert('{{ message }}');
+    </script>
+    {% endfor %}
+{% endif %}
+
+{% endblock %}

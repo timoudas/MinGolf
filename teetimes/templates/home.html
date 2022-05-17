@@ -1,0 +1,11 @@
+<!-- templates/home.html -->
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    {% include "header.html" %}
+    {% if user.is_authenticated %}
+        {% include "tasks.html" %}
+    {% endif %}
+{% endblock %}

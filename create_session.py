@@ -3,21 +3,13 @@ To book: Booking - > Add Players -> Init Booking -> Save Booking
 To delete: Calender -> Delete 
 
 """
-
-from time import strftime
-from matplotlib.style import available
 import requests
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import re
 from pprint import pprint
 from lxml import html
 import time
 
-# self.session.post(self.ADD_PLAYER_URL, data={'golfId': '950821-011', 'countryCode': 'SE'})
-# self.session.post(self.ADD_PLAYER_URL, data={'golfId': '970424-001', 'countryCode': 'SE'})
-# self.session.post(self.ADD_PLAYER_URL, data={'golfId': '960807-005', 'countryCode': 'SE'})
-# self.session.post(self.ADD_PLAYER_URL, data={'golfId': '970104-015', 'countryCode': 'SE'})
 
 class TeeTimesSession:
 
@@ -64,9 +56,6 @@ class TeeTimesSession:
             return res
     
     def get_lookup_timeperiod(self, tee_times, look_from, look_to):
-        # print(look_from, look_to)
-        # for slot in tee_times:
-        #     print()
         available = [slot for slot in tee_times if slot['SlotTime'] >= look_from and slot['SlotTime'] <= look_to]
         return available
     
@@ -112,9 +101,12 @@ class TeeTimesSession:
 
     def add_player(self, golf_id):
         self.session.post(self.ADD_PLAYER_URL, data={'golfId': golf_id, 'countryCode': 'SE'})
+        print('player added')
 
     def book_teetime(self, teetime_slot, players):
         self.session.get(self.BOOK_TEETIME_URL)
+        if players:
+            map(self.add_player, players)
         pdata = {'slotId': teetime_slot['SlotID']} #15 maj
         data = {
             "slotId": teetime_slot['SlotID'],
@@ -124,8 +116,6 @@ class TeeTimesSession:
             "bookingCode": ''
         }
         is_available = self.session.post(self.CHECK_AVAILABLE_URL, data=data).json()
-        if players:
-            map(self.add_player, players)
         init_booking = self.session.post(self.INIT_BOOKING_URL, data=pdata).json()
         book_teetime = self.session.post(self.SAVE_BOOKING).json()
         if book_teetime:
@@ -205,22 +195,27 @@ class TeeTimes(TeeTimesSession):
             all_times = self.get_all_times(self.datestamp)
             free_times = self.get_available_times(all_times)
             if not free_times:
-                time.sleep(5)
-                print('Nothing')
+                print('No times found')
             else:
                 times_to_consider = self.get_lookup_timeperiod(free_times, self.look_from, self.look_to)
                 if not times_to_consider:
-                    time.sleep(5)
-                    print('Nothing')
+                    print('No times withing lookup period')
                 else:
                     if self.prefered_teetime:
                         slot = self.get_slot_closest_to_prefered(times_to_consider, self.prefered_teetime)
                         booked = self.book_teetime(slot, self.players)
-                        print('booked')
-                        return booked
+                        if booked['HasErrors']:
+                            print(booked)
+                            print('Error yet')
+                            continue
+                        else:
+                            print('booked')
+                            print(booked)
+                            return booked
                     else:
                         booked = self.book_teetime(times_to_consider[0], self.players)
                         print('booked')
+                        print(booked)
                         return booked
 
 
@@ -228,7 +223,14 @@ class TeeTimes(TeeTimesSession):
 
 
 if __name__ == '__main__':
-    user = TeeTimes('970712-024', 'adde123', '2022-06-15', '04:00', '14:00', '06:00')
+    FELIX = "950821-011"
+    SEBBE = "970424-001"
+    JEPPE = "960427-020"
+    MARCUS = "931209-006"
+    LUKAS = "970104-015"
+    players_sat = [FELIX, SEBBE, LUKAS]
+    players_sun = [JEPPE, SEBBE, MARCUS]
+    user = TeeTimes('970712-024', 'adde123', '2022-05-08', '08:00', '16:40', prefered_teetime='13:00', players=players_sat)
     user.start_teetime_scan()
 
     
