@@ -7,8 +7,8 @@ import requests
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pprint import pprint
-from lxml import html
 import time
+# from lxml import html
 
 
 class TeeTimesSession:
@@ -17,7 +17,7 @@ class TeeTimesSession:
     BOOK_TEETIME_URL = 'https://mingolf.golf.se/Site/Booking'
     INIT_BOOKING_URL = 'https://mingolf.golf.se/handlers/booking/InitBooking'
     CHECK_AVAILABLE_URL = 'https://mingolf.golf.se/handlers/booking/CheckAvailability'
-    ADD_PLAYER_URL = 'https://mingolf.golf.se/handlers/booking/SearchAndAddPlayer'
+    ADD_PLAYER_URL = 'https://mingolf.golf.se/handlers/booking/AddPlayerToBooking'
     GET_TEETIMES = 'https://mingolf.golf.se/handlers/booking/GetTeeTimesFullDay'
     SAVE_BOOKING = 'https://mingolf.golf.se/handlers/booking/SaveBooking'
     CANCEL_BOOKING = 'https://mingolf.golf.se/handlers/booking/CancelBooking'
@@ -100,13 +100,16 @@ class TeeTimesSession:
             return is_available
 
     def add_player(self, golf_id):
-        self.session.post(self.ADD_PLAYER_URL, data={'golfId': golf_id, 'countryCode': 'SE'})
-        print('player added')
+        response = self.session.post(self.ADD_PLAYER_URL, data={'golfId': golf_id, 'countryCode': 'SE'})
+        if response.status_code == 200:
+            res_data = response.json()
+            if res_data['HasErrors'] == True:
+                print(res_data['ErrorMessage'])
+            else:
+                print('player added')
 
     def book_teetime(self, teetime_slot, players):
         self.session.get(self.BOOK_TEETIME_URL)
-        if players:
-            map(self.add_player, players)
         pdata = {'slotId': teetime_slot['SlotID']} #15 maj
         data = {
             "slotId": teetime_slot['SlotID'],
@@ -115,13 +118,31 @@ class TeeTimesSession:
             "clubId": teetime_slot['OrganizationalunitID'],
             "bookingCode": ''
         }
-        is_available = self.session.post(self.CHECK_AVAILABLE_URL, data=data).json()
+        is_available = self.session.post(self.CHECK_AVAILABLE_URL, data=data)
         init_booking = self.session.post(self.INIT_BOOKING_URL, data=pdata).json()
+        if players:
+            for player in players:
+                self.add_player(player)
         book_teetime = self.session.post(self.SAVE_BOOKING).json()
-        if book_teetime:
-            return book_teetime
-        else:
-            return 
+        return book_teetime
+
+    def print_booking_info(self, booked_teetime):
+        booked_players = []
+        time = booked_teetime['Slot']['BookingInfo']['Time']
+        dt_time = datetime.strptime(time, '%Y%m%dT%H%M%S')
+        for player in booked_teetime['Slot']['BookingInfo']['BookedPlayers']:
+            first_name = player['FName']
+            last_name = player['LName']
+            booked_players.append(f"{first_name} {last_name}")
+        print('BOOKING INFO')
+        print('='*60)
+        print('Date: ', dt_time.strftime('%Y-%m-%d'))
+        print('Day: ', dt_time.strftime('%A'))
+        print('Time: ', dt_time.strftime('%H:%M'))
+        print('Booked players: ', "\t".join(booked_players))
+        print('='*60)
+        
+
 
     def delete_teetime(self, slot_id, slot_time):
         data = {'slotId': slot_id}
@@ -138,6 +159,7 @@ class TeeTimesSession:
         self.session.headers['Referer'] = 'https://mingolf.golf.se/'
         time = self.session.get(self.CALENDER_URL, params=pdata).json()
         deleted = self.session.post(self.DELETE_BOOKED_TIME, data=data).json()
+
 
 
     
@@ -172,6 +194,7 @@ class TeeTimes(TeeTimesSession):
         self.players = players
         #Login to begin session
         self.login()
+        print('Logged in')
 
     
     def post_login_data(self):
@@ -184,10 +207,10 @@ class TeeTimes(TeeTimesSession):
     
     def login(self):
         login = self.session.post(self.LOGIN_URL, data=self.post_login_data())
-        tree = html.fromstring(login.content)
-        failed = tree.xpath('//*[@id="exp-forgot-password"]/a')
-        if failed:
-            print('Please check login-credentials to www.mingolf.se')
+        # tree = html.fromstring(login.content)
+        # failed = tree.xpath('//*[@id="exp-forgot-password"]/a')
+        # if failed:
+        #     print('Please check login-credentials to www.mingolf.se')
     
     def start_teetime_scan(self):
         not_booked = True
@@ -205,17 +228,14 @@ class TeeTimes(TeeTimesSession):
                         slot = self.get_slot_closest_to_prefered(times_to_consider, self.prefered_teetime)
                         booked = self.book_teetime(slot, self.players)
                         if booked['HasErrors']:
-                            print(booked)
-                            print('Error yet')
+                            print('Error yet: ', booked['ErrorMessage'])
                             continue
                         else:
-                            print('booked')
-                            print(booked)
+                            self.print_booking_info(booked)
                             return booked
                     else:
                         booked = self.book_teetime(times_to_consider[0], self.players)
-                        print('booked')
-                        print(booked)
+                        self.print_booking_info(booked)
                         return booked
 
 
@@ -228,9 +248,10 @@ if __name__ == '__main__':
     JEPPE = "960427-020"
     MARCUS = "931209-006"
     LUKAS = "970104-015"
-    players_sat = [FELIX, SEBBE, LUKAS]
+    players_sat = [FELIX, SEBBE, JEPPE]
     players_sun = [JEPPE, SEBBE, MARCUS]
-    user = TeeTimes('970712-024', 'adde123', '2022-05-08', '08:00', '16:40', prefered_teetime='13:00', players=players_sat)
+    players_test = [JEPPE]
+    user = TeeTimes('970712-024', 'adde123', '2022-07-09', '08:00', '13:00', prefered_teetime='09:00', players=None)
     user.start_teetime_scan()
 
     
