@@ -1,6 +1,7 @@
 """Book tee times
 To book: Booking - > Add Players -> Init Booking -> Save Booking
 To delete: Calender -> Delete 
+test
 """
 import requests
 from datetime import datetime
