@@ -251,7 +251,7 @@ if __name__ == '__main__':
     players_sat = [FELIX, SEBBE, JEPPE]
     players_sun = [JEPPE, SEBBE, MARCUS]
     players_test = [JEPPE]
-    user = TeeTimes('970712-024', 'adde123', '2022-07-09', '08:00', '13:00', prefered_teetime='09:00', players=None)
+    user = TeeTimes('970712-024', '*****', '2022-07-09', '08:00', '13:00', prefered_teetime='09:00', players=None)
     user.start_teetime_scan()
 
     
