@@ -152,4 +152,4 @@ def main(username, password, date=None):
 
 
 if __name__ == '__main__':
-    print(TeeTimes('970712-024', 'adde123').get_all_clubs())
+    print(TeeTimes('970712-024', '****').get_all_clubs())
